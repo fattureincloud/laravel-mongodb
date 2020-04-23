@@ -536,7 +536,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritdoc
      */
-    public function insert(array $values)
+    public function insert(array $values, array $options = [])
     {
         // Since every insert gets treated like a batch insert, we will have to detect
         // if the user is inserting a single document or an array of documents.
@@ -556,7 +556,7 @@ class Builder extends BaseBuilder
         }
 
         // Batch insert
-        $result = $this->collection->insertMany($values);
+        $result = $this->collection->insertMany($values, $options);
 
         return (1 == (int) $result->isAcknowledged());
     }
@@ -664,7 +664,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritdoc
      */
-    public function delete($id = null)
+    public function delete($id = null, array $options = [])
     {
         // If an ID is passed to the method, we will set the where clause to check
         // the ID to allow developers to simply and quickly remove a single row
@@ -674,7 +674,7 @@ class Builder extends BaseBuilder
         }
 
         $wheres = $this->compileWheres();
-        $result = $this->collection->DeleteMany($wheres);
+        $result = $this->collection->DeleteMany($wheres, $options);
         if (1 == (int) $result->isAcknowledged()) {
             return $result->getDeletedCount();
         }
