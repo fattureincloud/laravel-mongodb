@@ -170,14 +170,20 @@ class Connection extends BaseConnection
     protected function getDsnString(array $config)
     {
         $dsn_string = $config['dsn'];
+        $is_srv = false;
 
         if (Str::contains($dsn_string, 'mongodb://')) {
             $dsn_string = Str::replaceFirst('mongodb://', '', $dsn_string);
         }
 
+        if (Str::contains($dsn_string, 'mongodb+srv://')) {
+            $is_srv = true;
+            $dsn_string = Str::replaceFirst('mongodb+srv://', '', $dsn_string);
+        }
+
         $dsn_string = rawurlencode($dsn_string);
 
-        return "mongodb://{$dsn_string}";
+        return $is_srv ? "mongodb+srv://{$dsn_string}" : "mongodb://{$dsn_string}";
     }
 
     /**
@@ -200,8 +206,9 @@ class Connection extends BaseConnection
 
         // Check if we want to authenticate against a specific database.
         $auth_database = isset($config['options']) && !empty($config['options']['database']) ? $config['options']['database'] : null;
+        $is_srv = !!$config['srv'];
 
-        return 'mongodb://' . implode(',', $hosts) . ($auth_database ? '/' . $auth_database : '');
+        return ($is_srv ? 'mongodb+srv://' : 'mongodb://') . implode(',', $hosts) . ($auth_database ? '/' . $auth_database : '');
     }
 
     /**
