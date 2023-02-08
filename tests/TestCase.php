@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 use Illuminate\Auth\Passwords\PasswordResetServiceProvider;
@@ -67,5 +68,6 @@ class TestCase extends Orchestra\Testbench\TestCase
             'expire' => 60,
         ]);
         $app['config']->set('queue.failed.database', 'mongodb2');
+        $app['config']->set('queue.failed.driver', 'mongodb');
     }
 }

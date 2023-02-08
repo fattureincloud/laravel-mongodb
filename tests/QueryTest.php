@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 class QueryTest extends TestCase
@@ -17,12 +18,19 @@ class QueryTest extends TestCase
         User::create(['name' => 'Tommy Toe', 'age' => 33, 'title' => 'user']);
         User::create(['name' => 'Yvonne Yoe', 'age' => 35, 'title' => 'admin']);
         User::create(['name' => 'Error', 'age' => null, 'title' => null]);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2020-04-10', 'day' => '10', 'month' => '04', 'year' => '2020', 'time' => '10:53:11']);
+        Birthday::create(['name' => 'Jane Doe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:12']);
+        Birthday::create(['name' => 'Harry Hoe', 'birthday' => '2021-05-11', 'day' => '11', 'month' => '05', 'year' => '2021', 'time' => '10:53:13']);
+        Birthday::create(['name' => 'Robert Doe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:14']);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:15']);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2022-05-12', 'day' => '12', 'month' => '05', 'year' => '2022', 'time' => '10:53:16']);
     }
 
     public function tearDown(): void
     {
         User::truncate();
         Scoped::truncate();
+        Birthday::truncate();
         parent::tearDown();
     }
 
@@ -160,6 +168,54 @@ class QueryTest extends TestCase
     {
         $users = User::whereNotNull('age')->get();
         $this->assertCount(8, $users);
+    }
+
+    public function testWhereDate(): void
+    {
+        $birthdayCount = Birthday::whereDate('birthday', '2021-05-12')->get();
+        $this->assertCount(3, $birthdayCount);
+
+        $birthdayCount = Birthday::whereDate('birthday', '2021-05-11')->get();
+        $this->assertCount(1, $birthdayCount);
+    }
+
+    public function testWhereDay(): void
+    {
+        $day = Birthday::whereDay('day', '12')->get();
+        $this->assertCount(4, $day);
+
+        $day = Birthday::whereDay('day', '11')->get();
+        $this->assertCount(1, $day);
+    }
+
+    public function testWhereMonth(): void
+    {
+        $month = Birthday::whereMonth('month', '04')->get();
+        $this->assertCount(1, $month);
+
+        $month = Birthday::whereMonth('month', '05')->get();
+        $this->assertCount(5, $month);
+    }
+
+    public function testWhereYear(): void
+    {
+        $year = Birthday::whereYear('year', '2021')->get();
+        $this->assertCount(4, $year);
+
+        $year = Birthday::whereYear('year', '2022')->get();
+        $this->assertCount(1, $year);
+
+        $year = Birthday::whereYear('year', '<', '2021')->get();
+        $this->assertCount(1, $year);
+    }
+
+    public function testWhereTime(): void
+    {
+        $time = Birthday::whereTime('time', '10:53:11')->get();
+        $this->assertCount(1, $time);
+
+        $time = Birthday::whereTime('time', '>=', '10:53:14')->get();
+        $this->assertCount(3, $time);
     }
 
     public function testOrder(): void
@@ -325,6 +381,29 @@ class QueryTest extends TestCase
         $this->assertNull($results->first()->title);
         $this->assertEquals(9, $results->total());
         $this->assertEquals(1, $results->currentPage());
+    }
+
+    public function testCursorPaginate(): void
+    {
+        $results = User::cursorPaginate(2);
+        $this->assertEquals(2, $results->count());
+        $this->assertNotNull($results->first()->title);
+        $this->assertNotNull($results->nextCursor());
+        $this->assertTrue($results->onFirstPage());
+
+        $results = User::cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertNull($results->first()->title);
+
+        $results = User::orderBy('age', 'desc')->cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertEquals(37, $results->first()->age);
+        $this->assertNull($results->first()->title);
+
+        $results = User::whereNotNull('age')->orderBy('age', 'asc')->cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertEquals(13, $results->first()->age);
+        $this->assertNull($results->first()->title);
     }
 
     public function testUpdate(): void
