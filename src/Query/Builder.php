@@ -564,7 +564,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritdoc
      */
-    public function insert(array $values)
+    public function insert(array $values, array $options = [])
     {
         // Since every insert gets treated like a batch insert, we will have to detect
         // if the user is inserting a single document or an array of documents.
@@ -583,7 +583,7 @@ class Builder extends BaseBuilder
             $values = [$values];
         }
 
-        $options = $this->inheritConnectionOptions();
+        $options = $this->inheritConnectionOptions($options);
 
         $result = $this->collection->insertMany($values, $options);
 
@@ -695,7 +695,7 @@ class Builder extends BaseBuilder
     /**
      * @inheritdoc
      */
-    public function delete($id = null)
+    public function delete($id = null, array $options = [])
     {
         // If an ID is passed to the method, we will set the where clause to check
         // the ID to allow developers to simply and quickly remove a single row
@@ -705,7 +705,7 @@ class Builder extends BaseBuilder
         }
 
         $wheres = $this->compileWheres();
-        $options = $this->inheritConnectionOptions();
+        $options = $this->inheritConnectionOptions($options);
 
         $result = $this->collection->deleteMany($wheres, $options);
 
