@@ -8,7 +8,8 @@ class TestCase extends Orchestra\Testbench\TestCase
 {
     /**
      * Get application providers.
-     * @param \Illuminate\Foundation\Application $app
+     *
+     * @param  \Illuminate\Foundation\Application  $app
      * @return array
      */
     protected function getApplicationProviders($app)
@@ -22,7 +23,8 @@ class TestCase extends Orchestra\Testbench\TestCase
 
     /**
      * Get package providers.
-     * @param \Illuminate\Foundation\Application $app
+     *
+     * @param  \Illuminate\Foundation\Application  $app
      * @return array
      */
     protected function getPackageProviders($app)
@@ -37,7 +39,8 @@ class TestCase extends Orchestra\Testbench\TestCase
 
     /**
      * Define environment setup.
-     * @param Illuminate\Foundation\Application $app
+     *
+     * @param  Illuminate\Foundation\Application  $app
      * @return void
      */
     protected function getEnvironmentSetUp($app)
@@ -53,8 +56,6 @@ class TestCase extends Orchestra\Testbench\TestCase
         $app['config']->set('database.connections.mysql', $config['connections']['mysql']);
         $app['config']->set('database.connections.mongodb', $config['connections']['mongodb']);
         $app['config']->set('database.connections.mongodb2', $config['connections']['mongodb']);
-        $app['config']->set('database.connections.dsn_mongodb', $config['connections']['dsn_mongodb']);
-        $app['config']->set('database.connections.dsn_mongodb_db', $config['connections']['dsn_mongodb_db']);
 
         $app['config']->set('auth.model', 'User');
         $app['config']->set('auth.providers.users.model', 'User');
