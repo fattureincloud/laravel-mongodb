@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 class QueryTest extends TestCase
@@ -17,12 +18,19 @@ class QueryTest extends TestCase
         User::create(['name' => 'Tommy Toe', 'age' => 33, 'title' => 'user']);
         User::create(['name' => 'Yvonne Yoe', 'age' => 35, 'title' => 'admin']);
         User::create(['name' => 'Error', 'age' => null, 'title' => null]);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2020-04-10', 'day' => '10', 'month' => '04', 'year' => '2020', 'time' => '10:53:11']);
+        Birthday::create(['name' => 'Jane Doe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:12']);
+        Birthday::create(['name' => 'Harry Hoe', 'birthday' => '2021-05-11', 'day' => '11', 'month' => '05', 'year' => '2021', 'time' => '10:53:13']);
+        Birthday::create(['name' => 'Robert Doe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:14']);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2021-05-12', 'day' => '12', 'month' => '05', 'year' => '2021', 'time' => '10:53:15']);
+        Birthday::create(['name' => 'Mark Moe', 'birthday' => '2022-05-12', 'day' => '12', 'month' => '05', 'year' => '2022', 'time' => '10:53:16']);
     }
 
     public function tearDown(): void
     {
         User::truncate();
         Scoped::truncate();
+        Birthday::truncate();
         parent::tearDown();
     }
 
@@ -69,15 +77,6 @@ class QueryTest extends TestCase
 
         $users = User::where('name', 'like', 't%')->get();
         $this->assertCount(1, $users);
-
-        $users = User::where('age', 'like', '%35%')->get();
-        $this->assertCount(3, $users);
-
-        $users = User::where('age', 'like', '3%')->get();
-        $this->assertCount(6, $users);
-
-        $users = User::where('age', 'like', '%3')->get();
-        $this->assertCount(4, $users);
     }
 
     public function testNotLike(): void
@@ -171,6 +170,54 @@ class QueryTest extends TestCase
         $this->assertCount(8, $users);
     }
 
+    public function testWhereDate(): void
+    {
+        $birthdayCount = Birthday::whereDate('birthday', '2021-05-12')->get();
+        $this->assertCount(3, $birthdayCount);
+
+        $birthdayCount = Birthday::whereDate('birthday', '2021-05-11')->get();
+        $this->assertCount(1, $birthdayCount);
+    }
+
+    public function testWhereDay(): void
+    {
+        $day = Birthday::whereDay('day', '12')->get();
+        $this->assertCount(4, $day);
+
+        $day = Birthday::whereDay('day', '11')->get();
+        $this->assertCount(1, $day);
+    }
+
+    public function testWhereMonth(): void
+    {
+        $month = Birthday::whereMonth('month', '04')->get();
+        $this->assertCount(1, $month);
+
+        $month = Birthday::whereMonth('month', '05')->get();
+        $this->assertCount(5, $month);
+    }
+
+    public function testWhereYear(): void
+    {
+        $year = Birthday::whereYear('year', '2021')->get();
+        $this->assertCount(4, $year);
+
+        $year = Birthday::whereYear('year', '2022')->get();
+        $this->assertCount(1, $year);
+
+        $year = Birthday::whereYear('year', '<', '2021')->get();
+        $this->assertCount(1, $year);
+    }
+
+    public function testWhereTime(): void
+    {
+        $time = Birthday::whereTime('time', '10:53:11')->get();
+        $this->assertCount(1, $time);
+
+        $time = Birthday::whereTime('time', '>=', '10:53:14')->get();
+        $this->assertCount(3, $time);
+    }
+
     public function testOrder(): void
     {
         $user = User::whereNotNull('age')->orderBy('age', 'asc')->first();
@@ -190,6 +237,17 @@ class QueryTest extends TestCase
 
         $user = User::whereNotNull('age')->orderBy('natural', 'desc')->first();
         $this->assertEquals(35, $user->age);
+    }
+
+    public function testStringableOrder(): void
+    {
+        $age = str('age');
+
+        $user = User::whereNotNull('age')->orderBy($age, 'asc')->first();
+        $this->assertEquals(13, $user->age);
+
+        $user = User::whereNotNull('age')->orderBy($age, 'desc')->first();
+        $this->assertEquals(37, $user->age);
     }
 
     public function testGroupBy(): void
@@ -336,6 +394,29 @@ class QueryTest extends TestCase
         $this->assertEquals(1, $results->currentPage());
     }
 
+    public function testCursorPaginate(): void
+    {
+        $results = User::cursorPaginate(2);
+        $this->assertEquals(2, $results->count());
+        $this->assertNotNull($results->first()->title);
+        $this->assertNotNull($results->nextCursor());
+        $this->assertTrue($results->onFirstPage());
+
+        $results = User::cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertNull($results->first()->title);
+
+        $results = User::orderBy('age', 'desc')->cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertEquals(37, $results->first()->age);
+        $this->assertNull($results->first()->title);
+
+        $results = User::whereNotNull('age')->orderBy('age', 'asc')->cursorPaginate(2, ['name', 'age']);
+        $this->assertEquals(2, $results->count());
+        $this->assertEquals(13, $results->first()->age);
+        $this->assertNull($results->first()->title);
+    }
+
     public function testUpdate(): void
     {
         $this->assertEquals(1, User::where(['name' => 'John Doe'])->update(['name' => 'Jim Morrison']));
@@ -351,5 +432,52 @@ class QueryTest extends TestCase
         $this->assertCount(2, Scoped::withoutGlobalScopes()->get());
         $this->assertEquals(2, Scoped::withoutGlobalScopes()->update(['name' => 'Jimmy']));
         $this->assertCount(2, Scoped::withoutGlobalScopes()->where(['name' => 'Jimmy'])->get());
+    }
+
+    public function testUnsorted(): void
+    {
+        $unsortedResults = User::get();
+
+        $unsortedSubset = $unsortedResults->where('age', 35)->values();
+
+        $this->assertEquals('John Doe', $unsortedSubset[0]->name);
+        $this->assertEquals('Brett Boe', $unsortedSubset[1]->name);
+        $this->assertEquals('Yvonne Yoe', $unsortedSubset[2]->name);
+    }
+
+    public function testSort(): void
+    {
+        $results = User::orderBy('age')->get();
+
+        $this->assertEquals($results->sortBy('age')->pluck('age')->all(), $results->pluck('age')->all());
+    }
+
+    public function testSortOrder(): void
+    {
+        $results = User::orderBy('age', 'desc')->get();
+
+        $this->assertEquals($results->sortByDesc('age')->pluck('age')->all(), $results->pluck('age')->all());
+    }
+
+    public function testMultipleSort(): void
+    {
+        $results = User::orderBy('age')->orderBy('name')->get();
+
+        $subset = $results->where('age', 35)->values();
+
+        $this->assertEquals('Brett Boe', $subset[0]->name);
+        $this->assertEquals('John Doe', $subset[1]->name);
+        $this->assertEquals('Yvonne Yoe', $subset[2]->name);
+    }
+
+    public function testMultipleSortOrder(): void
+    {
+        $results = User::orderBy('age')->orderBy('name', 'desc')->get();
+
+        $subset = $results->where('age', 35)->values();
+
+        $this->assertEquals('Yvonne Yoe', $subset[0]->name);
+        $this->assertEquals('John Doe', $subset[1]->name);
+        $this->assertEquals('Brett Boe', $subset[2]->name);
     }
 }

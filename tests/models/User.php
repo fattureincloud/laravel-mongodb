@@ -1,27 +1,36 @@
 <?php
+
 declare(strict_types=1);
 
 use Illuminate\Auth\Authenticatable;
 use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Contracts\Auth\Authenticatable as AuthenticatableContract;
 use Illuminate\Contracts\Auth\CanResetPassword as CanResetPasswordContract;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Jenssegers\Mongodb\Eloquent\HybridRelations;
 use Jenssegers\Mongodb\Eloquent\Model as Eloquent;
 
 /**
- * Class User
+ * Class User.
+ *
  * @property string $_id
  * @property string $name
+ * @property string $email
  * @property string $title
  * @property int $age
  * @property \Carbon\Carbon $birthday
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
+ * @property string $username
  */
 class User extends Eloquent implements AuthenticatableContract, CanResetPasswordContract
 {
-    use Authenticatable, CanResetPassword, HybridRelations, Notifiable;
+    use Authenticatable;
+    use CanResetPassword;
+    use HybridRelations;
+    use Notifiable;
 
     protected $connection = 'mongodb';
     protected $dates = ['birthday', 'entry.date'];
@@ -64,7 +73,7 @@ class User extends Eloquent implements AuthenticatableContract, CanResetPassword
 
     public function photos()
     {
-        return $this->morphMany('Photo', 'imageable');
+        return $this->morphMany('Photo', 'has_image');
     }
 
     public function addresses()
@@ -77,8 +86,16 @@ class User extends Eloquent implements AuthenticatableContract, CanResetPassword
         return $this->embedsOne('User');
     }
 
-    public function getDateFormat()
+    protected function serializeDate(DateTimeInterface $date)
     {
-        return 'l jS \of F Y h:i:s A';
+        return $date->format('l jS \of F Y h:i:s A');
+    }
+
+    protected function username(): Attribute
+    {
+        return Attribute::make(
+            get: fn ($value) => $value,
+            set: fn ($value) => Str::slug($value)
+        );
     }
 }
