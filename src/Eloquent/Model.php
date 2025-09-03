@@ -89,7 +89,7 @@ abstract class Model extends BaseModel
             $value = parent::asDateTime($value);
         }
 
-        return new UTCDateTime($value->format('Uv'));
+        return new UTCDateTime($value);
     }
 
     /**
@@ -102,7 +102,7 @@ abstract class Model extends BaseModel
             $date = $value->toDateTime();
 
             $seconds = $date->format('U');
-            $milliseconds = abs($date->format('v'));
+            $milliseconds = abs((int)$date->format('v'));
             $timestampMs = sprintf('%d%03d', $seconds, $milliseconds);
 
             return Date::createFromTimestampMs($timestampMs);
@@ -124,7 +124,7 @@ abstract class Model extends BaseModel
      */
     public function freshTimestamp()
     {
-        return new UTCDateTime(Date::now()->format('Uv'));
+        return new UTCDateTime(Date::now());
     }
 
     /**
